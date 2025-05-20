@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Bus Route with Gemini</title>
+</head>
+<body>
+<h1>Check if Bus Passes Through a Town</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <label>From:</label>
+    <input type="text" name="from_town" required><br><br>
+
+    <label>To:</label>
+    <input type="text" name="to_town" required><br><br>
+
+    <label>Through (optional):</label>
+    <input type="text" name="through_town" required><br><br>
+
+    <button type="submit">Check Route</button>
+</form>
+
+{% if answer %}
+    <hr>
+    <h2>Gemini's Response:</h2>
+    <p>{{ answer }}</p>
+{% endif %}
+</body>
+</html>
