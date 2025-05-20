@@ -1,0 +1,23 @@
+<!-- templates/routes.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Routes</title>
+</head>
+<body>
+    <h1>All Bus Routes</h1>
+
+    {% for route in routes %}
+        <h3>{{ route.bus.name }}</h3>
+        <p>Stops:</p>
+        <ul>
+        {% for stop in route.routestop_set.all|dictsort:"position" %}
+            <li>{{ stop.position }}. {{ stop.town.name }}</li>
+        {% endfor %}
+        </ul>
+    {% empty %}
+        <p>No routes available.</p>
+    {% endfor %}
+</body>
+</html>
