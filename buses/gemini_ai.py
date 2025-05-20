@@ -1,8 +1,10 @@
+import os
+
 from google import genai
 
 from bus_company import settings
 
-client = genai.Client(api_key="AIzaSyAqZKq_pavbjir7XDTSen4CsuMvjESZn7c")
+client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
 model="gemini-2.0-flash"
 
