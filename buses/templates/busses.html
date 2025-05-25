@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Busses</title>
+    </head>
+    <body>
+    <h1>All busses</h1>
+    <div class="container border">
+        <h3>Search for best route</h3>
+        {% load crispy_forms_filters %}
+        <form method="post" action="{% url 'check_route' %}">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <label>
+                Departure Town
+                <input type="text" name="from_town">
+            </label>
+            <label>
+                Arrival Town
+                <input type="text" name="to_town">
+            </label>
+            <button type="submit" class="btn btn-info">Search</button>
+        </form>
+        {% if answer %}
+            <div>
+                <hr>
+                <h2>Gemini's Response:</h2>
+                <p>{{ answer|safe }}</p>
+            </div>
+        {% endif %}
+    </div>
+    <div class="container mt-4 border p-2">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for bus in busses %}
+                <div class="col">
+                    <div class="card h-100" style="width: 18rem;">
+                        {% if bus.image %}
+                            <img src="{{ bus.image.url }}" alt="Bus Image">
+                        {% else %}
+                            <img src="{% static '../media/images/blanko.png' %}" alt="Default Bus Image">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ bus.name }}</h5>
+                            <h5 class="card-title">{{ bus.description }}</h5>
+                            <p class="card-text"><b>Departure Time:</b> {{ bus.departure_time }}</p>
+                            <p class="card-text"><b>Arrival Time:</b> {{ bus.arrival_time }}</p>
+                            <hr>
+                            <p>Trough:</p>
+                            {% for route_town in bus.route.towns.all %}
+                                <li>{{ route_town.name }}</li>
+                            {% endfor %}
+                            <hr>
+                            <p class="card-text"><b>From Town:</b> {{ bus.route.start_town }}</p>
+                            <p class="card-text"><b>To Town:</b> {{ bus.route.end_town }}</p>
+                            <hr>
+                            <p class="card-text">Price {{ bus.price }}</p>
+                            <div class="text-center">
+                                <form method="get" action="{% url 'buy_ticket' bus_id=bus.id %}">
+                                    <button type="submit" class="btn btn-primary">Buy Ticket</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    </body>
+    </html>
+{% endblock %}

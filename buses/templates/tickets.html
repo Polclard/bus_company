@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Title</title>
+    </head>
+    <body>
+    <div class="container mt-4">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for ticket in tickets %}
+                <div class="col">
+                    <div class="card h-100" style="width: 18rem;">
+                        <h3 class="text-center">Ticket for {{ ticket.user }}</h3>
+                        <img src="{{ ticket.bus.image.url }}" class="card-img-top" alt="...">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ ticket.bus.name }}</h5>
+                            <h5 class="card-title">{{ ticket.bus.description }}</h5>
+                            <p class="card-text"><b>Departure Time:</b> {{ ticket.bus.departure_time }}</p>
+                            <p class="card-text"><b>Arrival Time:</b> {{ ticket.bus.arrival_time }}</p>
+                            <hr>
+                            <p class="card-text"><b>From Town:</b> {{ ticket.bus.route.start_town }}</p>
+                            <p class="card-text"><b>To Town:</b> {{ ticket.bus.route.end_town }}</p>
+                        </div>
+                        <form method="POST" action="{% url 'delete_ticket' ticket_id=ticket.id %}" class="text-center">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    </body>
+    </html>
+{% endblock %}
