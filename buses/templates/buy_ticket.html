@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Buy Ticket</title>
+    </head>
+    <body>
+    <div class="p-5">
+        <div class="p-3">
+            <div class="card h-100 p-4 text-center" style="width: 100%">
+                <img src="{{ bus.image.url }}" class="card-img-top" alt="...">
+                <div class="card-body">
+                    <h5 class="card-title">{{ bus.name }}</h5>
+                    <h5 class="card-title">{{ bus.description }}</h5>
+                    <hr>
+                    <p class="card-text"><b>Departure Time:</b> {{ bus.departure_time }}</p>
+                    <p class="card-text"><b>Arrival Time:</b> {{ bus.arrival_time }}</p>
+                    <hr>
+                    <p class="card-text"><b>From Town:</b> {{ bus.route.start_town }}</p>
+                    <p class="card-text"><b>To Town:</b> {{ bus.route.end_town }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% load crispy_forms_filters %}
+        <form method="post" class="p-2 text-center" action="{% url 'buy_ticket' bus_id=bus.id %}">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <label>
+                Discounted price:<br>
+                <input class="text-center" type="text" name="discount_price" required value="{{ bus.price }}" readonly>
+                <br><br>
+            </label>
+            <button type="submit" class="btn btn-success w-100">Buy ticket</button>
+        </form>
+    </div>
+    </body>
+    </html>
+{% endblock %}
