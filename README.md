@@ -7,9 +7,8 @@ Welcome to the **Django Bus Company Application**! This is a web-based platform 
 - ✅ **Manage Bus Companies** – Add and manage bus companies.
 - ✅ **Bus Management** – Register buses and assign them to companies.
 - ✅ **Route Management** – Define start and end locations for routes.
-- ✅ **Trip Management** – Schedule trips with departure times and prices.
+- ✅ **Ticket Management** – Schedule trips with departure times and prices.
 - ✅ **Django Admin Panel** – Easily manage data via Django's built-in admin.
-- ✅ **REST API** – Access data programmatically with Django REST Framework.
 - ✅ **User-Friendly Interface** – Browse trips via a simple web UI.
 
 ## 🏗️ Installation
@@ -30,6 +29,21 @@ pip install -r requirements.txt
 ```
 
 ### 3️⃣ Configure Database & Migrate Models
+
+- This project on development uses postgresql so first open settings.py in /bus_company/settings.py and then configure this part by creating .env file or passing the values directly to the fields
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_NAME'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+    }
+}
+```
+After changing this to match your local database settings and values you can proceed.
 
 ```sh
 python manage.py makemigrations
@@ -54,10 +68,23 @@ Visit `http://127.0.0.1:8000/` to access the app.
 
 ## 🔗 API Endpoints
 
+```python
+    path("admin/", admin.site.urls),
+    path("accounts/", include("accounts.urls")),  # new
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("check-route/", views.check_route, name="check_route"),
+    path('routes/', views.routes_list, name='routes_list'),
+    path('busses/', views.busses, name='busses'),
+    path("", TemplateView.as_view(template_name="home.html"), name="home"),
+    path("buy_ticket/<int:bus_id>/", views.buy_ticket, name="buy_ticket"),
+    path("tickets/<int:user_id>/", views.tickets, name="tickets"),
+    path("delete_ticket/<int:ticket_id>/", views.delete_ticket, name="delete_ticket"),
+```
+
 | Method | Endpoint       | Description       |
 | ------ | -------------- | ----------------- |
-| GET    | `/trips/`      | Get all trips     |
-| POST   | `/trips/`      | Create a new trip |
+| GET    | `/busses/`     | Get all busses    |
+| POST   | `/buy_ticket{id}/` | By a new ticket   |
 | GET    | `/trips/{id}/` | Get trip details  |
 | PUT    | `/trips/{id}/` | Update a trip     |
 | DELETE | `/trips/{id}/` | Delete a trip     |
@@ -80,10 +107,7 @@ Visit `http://127.0.0.1:8000/` to access the app.
 
 To deploy the app, configure a production-ready database like PostgreSQL and use services like:
 
-- **Heroku**
-- **DigitalOcean**
-- **AWS Elastic Beanstalk**
-- **Railway.app**
+- **Python Anywhere**
 
 ## 🤝 Contributing
 
