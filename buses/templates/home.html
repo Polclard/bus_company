@@ -1,12 +1,181 @@
-<!-- templates/home.html-->
+<!-- templates/home.html -->
 {% extends "base.html" %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <div>
-        {% if user.is_authenticated %}
-            Hi {{ user.username }}!
-        {% endif %}
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .hero {
+    background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+    color: white;
+    padding: 100px 20px;
+    text-align: center;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    margin-bottom: 40px;
+  }
+
+  .hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.7);
+  }
+
+  .hero p {
+    font-size: 1.3rem;
+    max-width: 700px;
+    margin: 0 auto 30px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+    color: white;
+    padding: 14px 30px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background-color: #0056b3;
+  }
+
+  .welcome-msg {
+    font-size: 1.3rem;
+    color: white;
+    margin-top: 20px;
+  }
+
+  .section {
+    max-width: 1100px;
+    margin: 60px auto;
+    padding: 0 20px;
+  }
+
+  .section h2 {
+    font-size: 2rem;
+    color: #007bff;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .steps {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 40px;
+  }
+
+  .step {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 30px 20px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+  }
+
+  .step:hover {
+    transform: translateY(-5px);
+  }
+
+  .step-icon {
+    font-size: 48px;
+    color: #007bff;
+    margin-bottom: 15px;
+  }
+
+  .step h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .step p {
+    color: #555;
+    font-size: 1rem;
+  }
+
+  .advantages-section {
+    background-color: #f0f4ff;
+    padding: 50px 20px;
+    border-radius: 12px;
+  }
+
+  .advantages {
+    list-style: none;
+    padding: 0;
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  .advantages li {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 20px;
+  }
+
+  .advantages li::before {
+    content: "✔";
+    position: absolute;
+    left: 0;
+    color: #007bff;
+    font-weight: bold;
+  }
+</style>
+
+<div class="hero">
+  <h1>Find Your Best Route with Us!</h1>
+  <p>Explore, plan, and manage bus travel across cities effortlessly — tailored for passengers and providers.</p>
+
+  {% if user.is_authenticated %}
+    <div class="welcome-msg">
+      Hi, <strong>{{ user.username }}</strong>! Glad to see you back.
     </div>
+  {% else %}
+    <a href="{% url 'signup' %}" class="btn-primary">Get Started - Sign Up Now</a>
+  {% endif %}
+</div>
+
+<section class="section">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">🔍</div>
+      <h3>Discover Routes</h3>
+      <p>Find the best bus routes for your travel needs in seconds.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">🗺️</div>
+      <h3>Plan Your Journey</h3>
+      <p>Review options, times, and stops to choose the best fit.</p>
+    </div>
+    <div class="step">
+      <div class="step-icon">✅</div>
+      <h3>Manage Your Account</h3>
+      <p>Sign in to manage preferences and explore personalized options.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section advantages-section">
+  <h2>Why Choose Us?</h2>
+  <ul class="advantages">
+    <li>Modern, responsive platform for effortless navigation.</li>
+    <li>Real-time access to route data and updates.</li>
+    <li>Built for convenience — no tech skills required.</li>
+    <li>Trusted by passengers and bus providers alike.</li>
+  </ul>
+</section>
 {% endblock %}

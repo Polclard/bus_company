@@ -10,7 +10,9 @@
     <div class="p-5">
         <div class="p-3">
             <div class="card h-100 p-4 text-center" style="width: 100%">
-                <img src="{{ bus.image.url }}" class="card-img-top" alt="...">
+                {% if bus.image %}
+                    <img src="{{ bus.image.url }}" class="card-img-top" alt="...">
+                {% endif %}
                 <div class="card-body">
                     <h5 class="card-title">{{ bus.name }}</h5>
                     <h5 class="card-title">{{ bus.description }}</h5>
