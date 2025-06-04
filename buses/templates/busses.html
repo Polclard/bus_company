@@ -17,11 +17,11 @@
             {{ form|crispy }}
             <label>
                 Departure Town
-                <input type="text" name="from_town">
+                <input type="text" name="from_town" required>
             </label>
             <label>
                 Arrival Town
-                <input type="text" name="to_town">
+                <input type="text" name="to_town" required>
             </label>
             <button type="submit" class="btn btn-info">Search</button>
         </form>
