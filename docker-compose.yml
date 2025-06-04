@@ -1,6 +1,19 @@
 name: bus_application_project
 
 services:
+  app:
+    build: .
+    image: my-docker-image
+    container_name: my-docker-container
+    command: /app/entrypoint.sh
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+
+
   postgres:
     image: postgres
     env_file:
