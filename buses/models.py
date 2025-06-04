@@ -4,7 +4,6 @@ from django.db import models
 
 # Create your models here.
 
-
 class Town(models.Model):
     name = models.CharField(max_length=100)
     latitude = models.FloatField()
@@ -29,8 +28,8 @@ class Route(models.Model):
     towns = models.ManyToManyField(Town, related_name='routes_passing_through')
 
     def __str__(self):
-        towns = ', '.join([town.name for town in self.towns.all()])
-        return f"{self.start_town} -> | {towns} | -> {self.end_town}"
+        towns = ', '.join([f"{town.name} - lat:{town.latitude} - lon:{town.longitude}" for town in self.towns.all()])
+        return f"{self.start_town}, trough-> | {towns} | -> {self.end_town}"
 
 
 class Bus(models.Model):
@@ -52,6 +51,7 @@ class Bus(models.Model):
                 f"{self.departure_time} - {self.arrival_time} - "
                 f"{self.price} - {self.description} - {self.company.name})"
                 f"Route Info {self.route.__str__()})")
+
 
 class Ticket(models.Model):
     bus = models.ForeignKey(Bus, on_delete=models.CASCADE, related_name='bus_tickets')

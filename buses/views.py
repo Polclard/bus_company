@@ -16,18 +16,18 @@ def check_route(request):
         to_town = request.POST.get("to_town")
 
         all_busses = list(Bus.objects.filter(route__start_town__name=from_town, route__end_town__name=to_town).all())
-        buses_info = "\n - ".join([bus.__str__() for bus in all_busses])
+        buses_info = "\n - ".join([bus.return_information() for bus in all_busses])
         if from_town and to_town:
             question = (
-                f"Give all the buses information and the towns they pass trough"
+                f"Here are all the buses information and the towns they pass trough"
                 f"1.{buses_info}"
                 f"give me the shortest route in format"
                 f"[id_of_bus, name_of_bus]"
-                f"without anything else, no text,"
-                f"and tell me the distance compared to other buses "
+                f"and tell me the distance compared to other buses"
                 f"or another details"
-                f"taking the latitude and longitude of the town and the road distance"
-                f"Taking into consideration the from_town ={from_town} and to_town ={to_town}"
+                f"taking the latitude and longitude of the town and the road distance into considerance"
+                f"but it must contain ONLY ONE int this format without as plain text [id_of_bus, name_of_bus] AND IT MUST BE IN THAT FORMAT"
+                f"Taking into consideration the from_town ={from_town} and to_town ={to_town} as well."
             )
             return_busses = []
             answer = ask_gemini(question)
@@ -35,8 +35,11 @@ def check_route(request):
             soup = BeautifulSoup(html_content, 'html.parser')
             html_content = str(soup)
             match = re.search(r'\[.*?\]', answer)
-            bus_registration, bus_name = match.group(0).replace("[", "").replace("]", "").split(",")
-            return_busses = Bus.objects.filter(registration_number=bus_registration)
+            if match:
+                bus_registration, bus_name = match.group(0).replace("[", "").replace("]", "").split(",")
+                return_busses = Bus.objects.filter(registration_number=bus_registration)
+            else:
+                return_busses = list(Bus.objects.all())
     if request.method == "GET":
         all_towns = Town.objects.all()
     return render(request, "busses.html", {'busses': return_busses, "answer": html_content})
