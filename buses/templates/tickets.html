@@ -13,7 +13,9 @@
                 <div class="col">
                     <div class="card h-100" style="width: 18rem;">
                         <h3 class="text-center">Ticket for {{ ticket.user }}</h3>
-                        <img src="{{ ticket.bus.image.url }}" class="card-img-top" alt="...">
+                        {% if bus.image %}
+                            <img src="{{ ticket.bus.image.url }}" class="card-img-top" alt="...">
+                          {% endif %}
                         <div class="card-body">
                             <h5 class="card-title">{{ ticket.bus.name }}</h5>
                             <h5 class="card-title">{{ ticket.bus.description }}</h5>
