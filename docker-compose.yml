@@ -4,8 +4,8 @@ services:
   app:
     build: .
     image: my-docker-image
-    container_name: my-docker-container
     command: /app/entrypoint.sh
+    container_name: my-docker-container
     ports:
       - "8000:8000"
     volumes:
