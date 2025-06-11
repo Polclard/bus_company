@@ -1,39 +1,39 @@
 {% extends 'base.html' %}
 {% block content %}
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Title</title>
-    </head>
-    <body>
-    <div class="container mt-4">
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            {% for ticket in tickets %}
-                <div class="col">
-                    <div class="card h-100" style="width: 18rem;">
-                        <h3 class="text-center">Ticket for {{ ticket.user }}</h3>
-                        {% if bus.image %}
-                            <img src="{{ ticket.bus.image.url }}" class="card-img-top" alt="...">
-                          {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">{{ ticket.bus.name }}</h5>
-                            <h5 class="card-title">{{ ticket.bus.description }}</h5>
-                            <p class="card-text"><b>Departure Time:</b> {{ ticket.bus.departure_time }}</p>
-                            <p class="card-text"><b>Arrival Time:</b> {{ ticket.bus.arrival_time }}</p>
-                            <hr>
-                            <p class="card-text"><b>From Town:</b> {{ ticket.bus.route.start_town }}</p>
-                            <p class="card-text"><b>To Town:</b> {{ ticket.bus.route.end_town }}</p>
-                        </div>
-                        <form method="POST" action="{% url 'delete_ticket' ticket_id=ticket.id %}" class="text-center">
+<div class="container my-5">
+    <h1 class="text-center text-primary mb-5">🎫 My Tickets</h1>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for ticket in tickets %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    {% if ticket.bus.image %}
+                        <img src="{{ ticket.bus.image.url }}" class="card-img-top" alt="Bus Image" style="height: 200px; object-fit: cover;">
+{#                    {% else %}#}
+{#                        <img src="{% static 'images/blanko.png' %}" class="card-img-top" alt="No Image" style="height: 200px; object-fit: cover;">#}
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">Bus: {{ ticket.bus.name }}</h5>
+                        <p class="text-muted">{{ ticket.bus.description }}</p>
+                        <p><strong>Departure:</strong> {{ ticket.bus.departure_time }}</p>
+                        <p><strong>Arrival:</strong> {{ ticket.bus.arrival_time }}</p>
+                        <hr>
+                        <p><strong>From:</strong> {{ ticket.bus.route.start_town }}</p>
+                        <p><strong>To:</strong> {{ ticket.bus.route.end_town }}</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 text-center">
+                        <form method="POST" action="{% url 'delete_ticket' ticket_id=ticket.id %}">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">Delete</button>
+                            <button type="submit" class="btn btn-outline-danger w-75">Delete Ticket</button>
                         </form>
                     </div>
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center">You have no tickets yet.</div>
+            </div>
+        {% endfor %}
     </div>
-    </body>
-    </html>
+</div>
 {% endblock %}
