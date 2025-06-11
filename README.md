@@ -102,7 +102,20 @@ Visit `http://127.0.0.1:8000/` to access the app.
  ┣ 📜 manage.py     # Django project management
  ┗ 📜 requirements.txt # Required dependencies
 ```
-
+## 🐳 Setup Easier with Docker
+![docker](https://github.com/user-attachments/assets/9774a465-add7-4cf8-8681-f2f19e7f359b)
+<br/>
+If you have docker and docker compose installed, to run the application using docker and docker compose do the following commands:
+ - Make sure docker desktop is running.
+ - Navigate with the terminal to your local place of the bus_company application
+ - The opened terminal should be at location where the Dockerfile and docker-compose.yml file are located
+```bash
+docker compose build
+```
+```bash
+docker compose up -d
+```
+ - Now access the application localy on [localhost:8080](http://localhost:8000/)
 ## 🌎 Deployment
 
 To deploy the app, configure a production-ready database like PostgreSQL and use services like:

@@ -1,2 +1,74 @@
 /bus_company/.env
 /buses/.env
+# Environments
+.env
+.venv
+env.bak/
+venv.bak/
+/media/
+/images/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Django migrations
+*/migrations/*.py
+*/migrations/*.pyc
+
+# SQLite database
+*.sqlite3
+
+# Logs
+*.log
+
+# Django secret settings
+*.env
+.env.*
+!.env.example  # keep a template if needed
+
+# Media/uploads (optional - comment out if you want to keep user uploads in repo)
+media/
+
+# Static files (if collected)
+staticfiles/
+static/
+
+# PyCharm
+.idea/
+*.iml
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Coverage and test reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.cache
+junit-*.xml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# MyPy, Pylint, Flake8
+.mypy_cache/
+.pytype/
+.pylint.d/
