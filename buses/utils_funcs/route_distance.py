@@ -22,9 +22,9 @@ def get_road_distance_osm(lat1, lon1, lat2, lon2):
     response = requests.post(ORS_BASE_URL, json=payload, headers=headers)
 
     if response.status_code == 200:
-        data = response.json()
-        distance_km = data['features'][0]['properties']['summary']['distance'] / 1000  # in km
-        duration_minutes = data['features'][0]['properties']['summary']['duration'] / 60  # in minutes
+        summary = response.json()['routes'][0]['summary']
+        distance_km = int(round(float(summary['distance']) / 1000, 2))
+        duration_minutes = int(round(float(summary['duration']) / 60, 2))
         return round(distance_km, 2), round(duration_minutes, 2)
     else:
         print("Error from ORS:", response.status_code, response.text)

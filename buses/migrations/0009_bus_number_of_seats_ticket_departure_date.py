@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("buses", "0009_populate_town_distances"),
+        ("buses", "0008_towndistance"),
     ]
 
     operations = [

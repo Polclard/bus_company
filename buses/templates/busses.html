@@ -12,12 +12,12 @@
                         <div class="col-md-6">
                             <label for="from_town" class="form-label">Departure Town</label>
                             <input type="text" class="form-control" id="from_town" name="from_town"
-                                   placeholder="e.g., New York">
+                                   placeholder="e.g., Skopje">
                         </div>
                         <div class="col-md-6">
                             <label for="to_town" class="form-label">Arrival Town</label>
                             <input type="text" class="form-control" id="to_town" name="to_town"
-                                   placeholder="e.g., Boston">
+                                   placeholder="e.g., Ohrid">
                         </div>
                     </div>
                     <div class="mt-4 text-end">
@@ -37,12 +37,107 @@
                         <p><strong>{{ shortest_bus_by_distance.name }}</strong>
                             — {{ shortest_bus_by_distance.registration_number }}</p>
                         <p>{{ shortest_bus_by_distance.description }}</p>
+                        <p><strong>Route Segment:</strong></p>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% with towns=shortest_bus_by_distance.route.towns.all %}
+                                <span class="badge bg-secondary">{{ shortest_bus_by_distance.route.start_town }}</span>
+                                {% for t in towns %}
+                                    <span class="badge bg-secondary">{{ t.name }}</span>
+                                {% endfor %}
+                                <span class="badge bg-secondary">{{ shortest_bus_by_distance.route.end_town }}</span>
+                            {% endwith %}
+                        </div>
                     </div>
                 {% endif %}
+
 
             </div>
         </div>
 
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <div class="col">
+                {% if shortest_bus_by_distance %}
+                    <div class="card h-100 shadow border-0 alert alert-info">
+                        <h3 class="text-center">Suggested by our algorithm</h3>
+                        <hr>
+                        {% if bus.image %}
+                            <img src="{{ shortest_bus_by_distance.image.url }}" class="card-img-top" alt="Bus Image"
+                                 style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ shortest_bus_by_distance.name }}</h5>
+                            <p class="text-muted">{{ shortest_bus_by_distance.description }}</p>
+
+                            <p><strong>Departure:</strong> {{ shortest_bus_by_distance.departure_time }}</p>
+                            <p><strong>Arrival:</strong> {{ shortest_bus_by_distance.arrival_time }}</p>
+
+                            <p class="mt-3"><strong>Route:</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for route_town in shortest_bus_by_distance.route.towns.all %}
+                                    <span class="badge bg-secondary">{{ route_town.name }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <p class="mt-3"><strong>Number of seats</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary">{{ shortest_bus_by_distance.number_of_seats }}</span>
+                            </div>
+
+                            <p class="mt-3"><strong>From:</strong> {{ shortest_bus_by_distance.route.start_town }}</p>
+                            <p><strong>To:</strong> {{ shortest_bus_by_distance.route.end_town }}</p>
+                            <p class="text-success fw-bold">Price: ${{ shortest_bus_by_distance.price }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <form method="get" action="{% url 'buy_ticket' bus_id=shortest_bus_by_distance.id %}">
+                                <button type="submit" class="btn btn-primary w-100">Buy Ticket</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col">
+                {% if gemini_best_bus %}
+                    <div class="card h-100 shadow border-0 alert alert-success">
+                        <h3 class="text-center">Suggested by gemini</h3>
+                        <hr>
+                        {% if bus.image %}
+                            <img src="{{ gemini_best_bus.image.url }}" class="card-img-top" alt="Bus Image"
+                                 style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ gemini_best_bus.name }}</h5>
+                            <p class="text-muted">{{ gemini_best_bus.description }}</p>
+
+                            <p><strong>Departure:</strong> {{ gemini_best_bus.departure_time }}</p>
+                            <p><strong>Arrival:</strong> {{ gemini_best_bus.arrival_time }}</p>
+
+                            <p class="mt-3"><strong>Route:</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for route_town in gemini_best_bus.route.towns.all %}
+                                    <span class="badge bg-secondary">{{ route_town.name }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <p class="mt-3"><strong>Number of seats</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary">{{ gemini_best_bus.number_of_seats }}</span>
+                            </div>
+
+                            <p class="mt-3"><strong>From:</strong> {{ gemini_best_bus.route.start_town }}</p>
+                            <p><strong>To:</strong> {{ gemini_best_bus.route.end_town }}</p>
+                            <p class="text-success fw-bold">Price: ${{ gemini_best_bus.price }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <form method="get" action="{% url 'buy_ticket' bus_id=gemini_best_bus.id %}">
+                                <button type="submit" class="btn btn-primary w-100">Buy Ticket</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <br>
+        <hr>
         <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for bus in busses %}
                 <div class="col">
@@ -50,8 +145,6 @@
                         {% if bus.image %}
                             <img src="{{ bus.image.url }}" class="card-img-top" alt="Bus Image"
                                  style="height: 200px; object-fit: cover;">
-                            {#                    {% else %}#}
-                            {#                        <img src="{% static 'images/blanko.png' %}" class="card-img-top" alt="Default Bus Image" style="height: 200px; object-fit: cover;">#}
                         {% endif %}
                         <div class="card-body">
                             <h5 class="card-title text-primary">{{ bus.name }}</h5>
@@ -65,6 +158,11 @@
                                 {% for route_town in bus.route.towns.all %}
                                     <span class="badge bg-secondary">{{ route_town.name }}</span>
                                 {% endfor %}
+                            </div>
+
+                            <p class="mt-3"><strong>Number of seats</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary">{{ bus.number_of_seats }}</span>
                             </div>
 
                             <p class="mt-3"><strong>From:</strong> {{ bus.route.start_town }}</p>

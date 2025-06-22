@@ -9,6 +9,7 @@ from .gemini_ai import ask_gemini
 # Create your views here.
 from .models import Route, Ticket
 from .models import Town, Bus, TownDistance
+from .utils_funcs.route_distance import get_road_distance_osm
 
 
 def check_route(request):
@@ -25,81 +26,83 @@ def check_route(request):
         if from_town and to_town:
             from_town_obj = Town.objects.filter(name=from_town).first()
             to_town_obj = Town.objects.filter(name=to_town).first()
-            print(from_town_obj, to_town_obj)
+            print(f"from_town: {from_town}, to_town: {to_town}")
             if from_town_obj and to_town_obj:
-                all_busses = (Bus.objects.filter(
-                    route__start_town=from_town_obj, route__end_town=to_town_obj
-                ) or
-                Bus.objects.filter(
-                    route__towns=from_town_obj
-                ).filter(
-                    route__towns=to_town_obj
-                ).distinct())
+                qs1 = list(Bus.objects.filter(route__start_town=from_town_obj, route__end_town=to_town_obj))
+                qs2 = list(Bus.objects.filter(route__towns=from_town_obj).filter(route__towns=to_town_obj))
 
+                all_busses = (qs1 + qs2)
                 return_busses = list(all_busses)
-                print(return_busses)
-                if return_busses:
-                    try:
-                        buses_info = "\n - ".join([bus.return_information() for bus in return_busses])
+                print(all_busses)
 
-                        question = (
-                            f"Here are all the buses information and the towns they pass through:\n"
-                            f"{buses_info}\n"
-                            f"Give me the shortest route in format [id_of_bus, name_of_bus]. "
-                            f"Tell me the distance compared to other buses, considering road distances between towns. "
-                            f"Your output MUST be only in the format [id_of_bus, name_of_bus]. "
-                            f"Start town: {from_town}, End town: {to_town}."
-                        )
+                try:
+                    buses_info = "\n - ".join([bus.return_information() for bus in return_busses])
 
-                        answer = ask_gemini(question)
-                        html_content = str(BeautifulSoup(markdown.markdown(answer), 'html.parser'))
+                    question = (
+                        f"Here are all the buses information and the towns they pass through:\n"
+                        f"{buses_info}\n"
+                        f"Give me the shortest route in format [id_of_bus, name_of_bus]. "
+                        f"Tell me the distance compared to other buses, considering road distances between towns. "
+                        f"Your output MUST be only in the format [id_of_bus, name_of_bus]. "
+                        f"Start town: {from_town}, End town: {to_town}."
+                    )
 
-                        match = re.search(r'\[(.*?)\]', answer)
-                        if match:
-                            bus_registration, _ = match.group(1).split(",", 1)
-                            gemini_busses = Bus.objects.filter(registration_number=bus_registration.strip())
-                        else:
-                            gemini_busses = Bus.objects.none()
+                    answer = ask_gemini(question)
+                    html_content = str(BeautifulSoup(markdown.markdown(answer), 'html.parser'))
 
-                        min_total_distance = float('inf')
-                        best_bus = None
+                    match = re.search(r'\[(.*?)\]', answer)
+                    if match:
+                        bus_registration, _ = match.group(1).split(",", 1)
+                        gemini_busses = Bus.objects.filter(registration_number=bus_registration.strip())
+                    else:
+                        gemini_busses = Bus.objects.none()
 
-                        for bus in return_busses:
-                            towns = list(bus.route.towns.all())
-                            if from_town_obj in towns and to_town_obj in towns:
-                                from_index = towns.index(from_town_obj)
-                                to_index = towns.index(to_town_obj)
+                    # ORS Road Distance Calculation
+                    min_total_distance = float('inf')
+                    best_bus = None
 
-                                if from_index < to_index:
-                                    route_slice = towns[from_index:to_index + 1]
-                                    total_distance = 0
-                                    valid = True
+                    for bus in return_busses:
+                        route = bus.route
+                        full_towns = [route.start_town] + list(route.towns.all()) + [route.end_town]
 
-                                    for i in range(len(route_slice) - 1):
-                                        try:
-                                            td = TownDistance.objects.get(
-                                                from_town=route_slice[i],
-                                                to_town=route_slice[i + 1]
-                                            )
-                                            total_distance += td.distance_km
-                                        except TownDistance.DoesNotExist:
-                                            valid = False
-                                            break
+                        if from_town_obj in full_towns and to_town_obj in full_towns:
+                            from_index = full_towns.index(from_town_obj)
+                            to_index = full_towns.index(to_town_obj)
 
-                                    if valid and total_distance < min_total_distance:
-                                        min_total_distance = total_distance
-                                        best_bus = bus
-                        print(f"Best bus: {best_bus}")
-                        shortest_bus_by_distance = best_bus
+                            if from_index < to_index:
+                                sub_route = full_towns[from_index:to_index + 1]
+                                total_distance = 0
+                                valid = True
 
-                        if gemini_busses.exists():
-                            return_busses = list(gemini_busses)
+                                for i in range(len(sub_route) - 1):
+                                    lat1, lon1 = sub_route[i].latitude, sub_route[i].longitude
+                                    lat2, lon2 = sub_route[i + 1].latitude, sub_route[i + 1].longitude
 
-                    except Exception:
-                        return_busses = []
-                        answer = None
-                        html_content = None
-                        shortest_bus_by_distance = None
+                                    dist, _ = get_road_distance_osm(lat1, lon1, lat2, lon2)
+
+                                    if dist is not None:
+                                        total_distance += dist
+                                    else:
+                                        valid = False
+                                        break
+
+                                if valid and total_distance < min_total_distance:
+                                    min_total_distance = total_distance
+                                    best_bus = bus
+
+                    shortest_bus_by_distance = best_bus
+
+                    if gemini_busses.exists():
+                        # return_busses = list(gemini_busses)
+                        gemini_best_bus = list(gemini_busses)
+                        return_busses = Bus.objects.all()
+
+                except Exception as e:
+                    print("Gemini/ORS error:", e)
+                    return_busses = []
+                    answer = None
+                    html_content = None
+                    shortest_bus_by_distance = None
 
     return render(request, "busses.html", {
         'busses': return_busses,
@@ -107,9 +110,9 @@ def check_route(request):
         'towns': all_towns,
         'from_town': from_town,
         'to_town': to_town,
-        'shortest_bus_by_distance': shortest_bus_by_distance
+        'shortest_bus_by_distance': shortest_bus_by_distance,
+        'gemini_best_bus': gemini_best_bus[0],
     })
-
 
 
 def routes_list(request):
@@ -144,13 +147,20 @@ def buy_ticket(request, bus_id):
     if request.user.is_authenticated:
         if request.method == "POST":
             bus = Bus.objects.get(id=bus_id)
-            price = request.POST.get("discount_price")
-            Ticket.objects.create(bus=bus, user=request.user, discounted_price=price)
-            return redirect('tickets', user_id=request.user.id)
+            number_of_occupied_seats = Ticket.objects.filter(bus=bus).count()
+            if number_of_occupied_seats < bus.number_of_seats:
+                price = request.POST.get("discount_price")
+                Ticket.objects.create(bus=bus, user=request.user, discounted_price=price)
+                return redirect('tickets', user_id=request.user.id)
+            else:
+                return render(request, 'buy_ticket.html',
+                              {'bus': None, 'number_of_free_seats': None})
         if request.method == "GET":
             print(bus_id)
             bus = Bus.objects.get(id=bus_id)
-            return render(request, 'buy_ticket.html', {'bus': bus})
+            number_of_occupied_seats = Ticket.objects.filter(bus=bus).count()
+            return render(request, 'buy_ticket.html',
+                          {'bus': bus, 'number_of_free_seats': bus.number_of_seats - number_of_occupied_seats})
     else:
         return redirect("home")
 
