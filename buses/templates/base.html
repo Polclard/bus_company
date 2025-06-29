@@ -58,6 +58,29 @@
     {% block content %}
     {% endblock %}
 </main>
+
+{% if messages %}
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    {% for message in messages %}
+      {% if message.tags == 'error' %}
+                <div class="toast align-items-center text-white bg-danger border-0 show" role="alert">
+
+      {% elif message.tags == 'success' %}
+            <div class="toast align-items-center text-white bg-success border-0 show" role="alert">
+
+      {% endif %}
+
+        <div class="d-flex">
+          <div class="toast-body">
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </html>

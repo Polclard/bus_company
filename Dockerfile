@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 LABEL authors="alenj"
 
-FROM python:3.11
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

@@ -1,4 +1,7 @@
+import datetime
+
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -42,6 +45,7 @@ class Bus(models.Model):
     arrival_time = models.TimeField()
     price = models.DecimalField(max_digits=8, decimal_places=2)
     image = models.ImageField(upload_to='images/', null=True, blank=True)
+    number_of_seats = models.IntegerField(default=1)
 
     def __str__(self):
         return f"{self.name} - ({self.registration_number})"
@@ -58,6 +62,32 @@ class Ticket(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_tickets')
     discounted_price = models.DecimalField(max_digits=8, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
+    departure_date= models.DateField(default=datetime.date.today)
+
+    def clean(self):
+        existing_tickets = Ticket.objects.filter(
+            bus=self.bus,
+            departure_date=self.departure_date
+        )
+
+        if self.pk:
+            existing_tickets = existing_tickets.exclude(pk=self.pk)
+
+        if existing_tickets.count() >= self.bus.number_of_seats:
+            raise ValidationError("No seats available for this bus on the selected date.")
 
     def __str__(self):
         return f"Ticket for {self.user} on {self.bus}"
+
+class TownDistance(models.Model):
+    from_town = models.ForeignKey(Town, on_delete=models.CASCADE, related_name='distances_from')
+    to_town = models.ForeignKey(Town, on_delete=models.CASCADE, related_name='distances_to')
+    distance_km = models.FloatField()  # Road distance in kilometers
+    duration_minutes = models.IntegerField()  # Optional: driving duration
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('from_town', 'to_town')
+
+    def __str__(self):
+        return f"{self.from_town.name} → {self.to_town.name}: {self.distance_km} km"
