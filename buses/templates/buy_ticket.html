@@ -36,17 +36,24 @@
                 </div>
 
                 <form method="post" action="{% url 'buy_ticket' bus_id=bus.id %}">
-                    {% csrf_token %}
-                    {{ form|crispy }}
+    {% csrf_token %}
+    {{ form|crispy }}
 
-                    <div class="mb-3">
-                        <label for="discount_price" class="form-label"><strong>Price</strong></label>
-                        <input type="text" class="form-control text-center bg-light" id="discount_price"
-                               name="discount_price" value="{{ bus.price }}" readonly>
-                    </div>
+    <div class="mb-3">
+        <label for="departure_date" class="form-label"><strong>Select Departure Date</strong></label>
+        <input type="date" class="form-control text-center" name="departure_date"
+               value="{{ selected_date }}" required>
+    </div>
 
-                    <button type="submit" class="btn btn-success w-100 py-2">🎫 Buy Ticket Now</button>
-                </form>
+    <div class="mb-3">
+        <label for="discount_price" class="form-label"><strong>Price</strong></label>
+        <input type="text" class="form-control text-center bg-light" id="discount_price"
+               name="discount_price" value="{{ bus.price }}" readonly>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100 py-2">🎫 Buy Ticket Now</button>
+</form>
+
             </div>
         {% else %}
             <div><h1>All of the seats are occupied for this bus</h1></div>

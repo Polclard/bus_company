@@ -1,9 +1,13 @@
 import re
+from datetime import datetime
 
 import markdown
 from bs4 import BeautifulSoup
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from django.shortcuts import render
+from django.utils.dateparse import parse_date
 
 from .gemini_ai import ask_gemini
 # Create your views here.
@@ -143,26 +147,77 @@ def tickets(request, user_id):
         return redirect("home")
 
 
+from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.utils.dateparse import parse_date
+from django.shortcuts import render, redirect, get_object_or_404
+
 def buy_ticket(request, bus_id):
-    if request.user.is_authenticated:
-        if request.method == "POST":
-            bus = Bus.objects.get(id=bus_id)
-            number_of_occupied_seats = Ticket.objects.filter(bus=bus).count()
-            if number_of_occupied_seats < bus.number_of_seats:
-                price = request.POST.get("discount_price")
-                Ticket.objects.create(bus=bus, user=request.user, discounted_price=price)
-                return redirect('tickets', user_id=request.user.id)
-            else:
-                return render(request, 'buy_ticket.html',
-                              {'bus': None, 'number_of_free_seats': None})
-        if request.method == "GET":
-            print(bus_id)
-            bus = Bus.objects.get(id=bus_id)
-            number_of_occupied_seats = Ticket.objects.filter(bus=bus).count()
-            return render(request, 'buy_ticket.html',
-                          {'bus': bus, 'number_of_free_seats': bus.number_of_seats - number_of_occupied_seats})
-    else:
+    if not request.user.is_authenticated:
         return redirect("home")
+
+    bus = get_object_or_404(Bus, id=bus_id)
+
+    if request.method == "POST":
+        selected_date = request.POST.get("departure_date")
+        price = request.POST.get("discount_price")
+        departure_date = parse_date(selected_date)
+
+        try:
+            ticket = Ticket(
+                bus=bus,
+                user=request.user,
+                discounted_price=price,
+                departure_date=departure_date
+            )
+            ticket.full_clean()
+            ticket.save()
+            messages.success(request, "Ticket purchased successfully!")
+            return redirect('tickets', user_id=request.user.id)
+
+        except ValidationError as e:
+            messages.error(request, ' '.join(e.messages))
+
+        # Fall through to re-render the form with error message
+        occupied_seats = Ticket.objects.filter(bus=bus, departure_date=departure_date).count()
+        free_seats = bus.number_of_seats - occupied_seats
+
+        return render(request, 'buy_ticket.html', {
+            'bus': bus,
+            'number_of_free_seats': free_seats,
+            'selected_date': selected_date
+        })
+
+
+    else:
+
+        selected_date = request.GET.get("departure_date")
+
+        if selected_date:
+
+            departure_date = parse_date(selected_date)
+
+        else:
+
+            import datetime
+
+            departure_date = datetime.date.today()
+
+            selected_date = departure_date.strftime('%Y-%m-%d')  # for rendering in the input
+
+        occupied_seats = Ticket.objects.filter(bus=bus, departure_date=departure_date).count()
+
+        free_seats = bus.number_of_seats - occupied_seats
+
+        return render(request, 'buy_ticket.html', {
+
+            'bus': bus,
+
+            'number_of_free_seats': free_seats,
+
+            'selected_date': selected_date
+
+        })
 
 
 def delete_ticket(request, ticket_id):
