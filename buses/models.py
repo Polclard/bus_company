@@ -29,11 +29,27 @@ class Route(models.Model):
     start_town = models.ForeignKey(Town, on_delete=models.CASCADE, related_name='routes_starting')
     end_town = models.ForeignKey(Town, on_delete=models.CASCADE, related_name='routes_ending')
     towns = models.ManyToManyField(Town, related_name='routes_passing_through')
+    towns_order = models.JSONField(null=True, blank=True)
+    def get_ordered_towns(self):
+        """
+        Return towns in the order specified in towns_order JSONField.
+        Fallback to unordered if towns_order is None or incomplete.
+        """
+        if not self.towns_order:
+            return list(self.towns.all())
 
+        # Fetch Town objects by IDs in towns_order
+        towns_qs = self.towns.filter(id__in=self.towns_order)
+        towns_dict = {town.id: town for town in towns_qs}
+
+        # Preserve order, but skip missing towns
+        ordered_towns = [towns_dict[t_id] for t_id in self.towns_order if t_id in towns_dict]
+
+        return ordered_towns 
     def __str__(self):
-        towns = ', '.join([f"{town.name} - lat:{town.latitude} - lon:{town.longitude}" for town in self.towns.all()])
+        towns = ', '.join([f"{town.name} - lat:{town.latitude} - lon:{town.longitude}" for town in self.get_ordered_towns()])
         return f"{self.start_town}, trough-> | {towns} | -> {self.end_town}"
-
+    
 
 class Bus(models.Model):
     name = models.CharField(max_length=100)
