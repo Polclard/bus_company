@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="container my-5 d-flex justify-content-center">
+    <div class="card shadow-lg p-4 w-100" style="max-width: 800px;">
+        <h2 class="text-center text-dark mb-4">🚌 Confirm All Tickets</h2>
+
+        <form method="post" action="{% url 'confirm_all_tickets' %}">
+            {% csrf_token %}
+            <input type="hidden" name="departure_date" value="{{ departure_date }}">
+            {% for bus in busses %}
+                <input type="hidden" name="bus_ids" value="{{ bus.id }}">
+                <div class="card mb-3">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            {% if bus.image %}
+                                <img src="{{ bus.image.url }}" class="img-fluid rounded-start h-100" alt="Bus Image" style="object-fit: cover;">
+                            {% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">{{ bus.name }}</h5>
+                                <p class="card-text text-muted">{{ bus.description }}</p>
+                                <p class="card-text"><strong>Date:</strong> {{ departure_date }}</p>
+                                <p class="card-text"><strong>Departure:</strong> {{ bus.departure_time }}</p>
+                                <p class="card-text"><strong>Arrival:</strong> {{ bus.arrival_time }}</p>
+                                <p class="card-text"><strong>From:</strong> {{ bus.route.start_town }}</p>
+                                <p class="card-text"><strong>To:</strong> {{ bus.route.end_town }}</p>
+                                <hr>
+                                <p class="card-text"><strong>Price:</strong> ${{ bus.price }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="alert alert-info mt-4">
+                <h4 class="text-center mb-0">Total Price: <strong>${{ total_price }}</strong></h4>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 mt-4">🎫 Confirm and Buy All Tickets</button>
+        </form>
+
+    </div>
+</div>
+{% endblock %}

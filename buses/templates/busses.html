@@ -9,15 +9,27 @@
                 <form method="post" action="{% url 'check_route' %}">
                     {% csrf_token %}
                     <div class="row g-3">
-                        <div class="col-md-4">
+                       <div class="col-md-4">
                             <label for="from_town" class="form-label">Departure Town</label>
-                            <input type="text" class="form-control" id="from_town" name="from_town"
-                                   placeholder="e.g., Skopje" value="{{from_town}}">
+                            <select class="form-select" id="from_town" name="from_town" required>
+                                <option value="">Select a town</option>
+                                {% for town in towns %}
+                                    <option value="{{ town.name }}" {% if town.name == from_town %}selected{% endif %}>
+                                        {{ town.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label for="to_town" class="form-label">Arrival Town</label>
-                            <input type="text" class="form-control" id="to_town" name="to_town"
-                                   placeholder="e.g., Ohrid" value="{{ to_town }}">
+                            <select class="form-select" id="to_town" name="to_town" required>
+                                <option value="">Select a town</option>
+                                {% for town in towns %}
+                                    <option value="{{ town.name }}" {% if town.name == to_town %}selected{% endif %}>
+                                        {{ town.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="col-md-2">
                             <label for="date" class="form-label">Date</label>

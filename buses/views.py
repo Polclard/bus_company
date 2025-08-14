@@ -1,23 +1,13 @@
-
-import markdown
-from bs4 import BeautifulSoup
-from django.contrib import messages
-from django.core.exceptions import ValidationError
-from django.shortcuts import redirect
-from django.shortcuts import render
-from django.utils.dateparse import parse_date
 from collections import defaultdict
-
-
-from .gemini_ai import ask_gemini
 # Create your views here.
-from collections import deque, namedtuple
-from datetime import timedelta, datetime,date
-from .models import Route, Ticket
-from .models import Town, Bus, TownDistance
-from django.db.models import Case, When,Count
+from collections import deque
+from datetime import timedelta, datetime
 
-from .utils_funcs.route_distance import get_road_distance_osm
+from django.db import transaction
+from django.db.models import Case, When, Count, Sum
+
+from .models import Route, Ticket
+from .models import Town, Bus
 
 
 # def check_route(request):
@@ -198,16 +188,15 @@ def find_best_route(from_town_obj, to_town_obj, departure_datetime=None, desired
                 candidate_buses.append((time_diff, bus, dep_time_from))
 
     if candidate_buses:
-        candidate_buses.sort(key=lambda x: x[0])  # closest departure time first
+        candidate_buses.sort(key=lambda x: x[0])
         best_time_diff, best_bus, best_dep_time = candidate_buses[0]
 
-        instructions += f"--- ROUTE FOUND ---\n"
         instructions += (f"Take bus '{best_bus.name}' from {from_town_obj.name} at "
                          f"{best_dep_time.strftime('%H:%M')} straight to {to_town_obj.name} arriving at "
                          f"{bus_schedules[best_bus][to_town_obj].strftime('%H:%M')}\n")
-        instructions += f"--- END OF ROUTE ---\n"
-        print(instructions)
-        return [best_bus]
+
+        # Return the list of buses and the instructions string
+        return [best_bus], instructions
 
     # Helper function to build visited state key with arrival time rounded to minutes
     def get_state_key(town_id, buses_taken, arrival_time):
@@ -227,7 +216,7 @@ def find_best_route(from_town_obj, to_town_obj, departure_datetime=None, desired
                 instructions += f"You are already at {to_town_obj.name}\n"
             else:
                 board_town = from_town_obj
-                instructions += f"--- ROUTE FOUND ---\n"
+
                 for i, bus in enumerate(buses_taken):
                     towns = bus_routes[bus]
                     board_idx = towns.index(board_town)
@@ -252,17 +241,16 @@ def find_best_route(from_town_obj, to_town_obj, departure_datetime=None, desired
                     instructions += f"Take bus '{bus.name}' from {board_town.name} at {dep_time_str} to {alight_town.name} arriving at {arr_time_str}\n"
 
                     if i < len(buses_taken) - 1:
-                        layover = (bus_schedules[buses_taken[i + 1]][alight_town] - bus_schedules[bus][alight_town]).total_seconds()
+                        layover = (bus_schedules[buses_taken[i + 1]][alight_town] - bus_schedules[bus][
+                            alight_town]).total_seconds()
                         layover_minutes = int(layover // 60)
                         instructions += f"Change at {alight_town.name}, layover time: {layover_minutes} minutes\n"
 
                     board_town = alight_town
 
             instructions += f"Arrive at {to_town_obj.name}\n"
-            instructions += f"--- END OF ROUTE ---\n"
 
-            print(instructions)
-            return buses_taken
+            return buses_taken, instructions
 
         for bus, towns in bus_routes.items():
             if bus in visited_buses:
@@ -298,8 +286,7 @@ def find_best_route(from_town_obj, to_town_obj, departure_datetime=None, desired
                             queue.append((next_town, new_buses_taken, visited_buses | {bus}, est_arrival_next))
 
     instructions += "No connection found between these towns.\n"
-    print(instructions)
-    return []
+    return [], instructions
 
 
 def check_route(request):
@@ -307,20 +294,19 @@ def check_route(request):
     departure_time_str = None
     departure_date_str = None
     all_towns = Town.objects.all()
+    route_instructions = ""
     return_busses = []
 
     if request.method == "POST":
         from_town = request.POST.get("from_town")
         to_town = request.POST.get("to_town")
-        departure_date_str = request.POST.get("date")  # "YYYY-MM-DD"
-        departure_time_str = request.POST.get("departure_time")  # "HH:MM"
+        departure_date_str = request.POST.get("date")
+        departure_time_str = request.POST.get("departure_time")
 
         if from_town and to_town:
             from_town_obj = Town.objects.filter(name=from_town).first()
             to_town_obj = Town.objects.filter(name=to_town).first()
             if from_town_obj and to_town_obj:
-
-                # Parse date, fallback to today if invalid or missing
                 if departure_date_str:
                     try:
                         parsed_date = datetime.strptime(departure_date_str, "%Y-%m-%d").date()
@@ -329,7 +315,6 @@ def check_route(request):
                 else:
                     parsed_date = datetime.today().date()
 
-                # Parse time, fallback to midnight if invalid or missing
                 if departure_time_str:
                     try:
                         parsed_time = datetime.strptime(departure_time_str, "%H:%M").time()
@@ -340,24 +325,24 @@ def check_route(request):
 
                 departure_datetime = datetime.combine(parsed_date, parsed_time)
 
-                best_route_buses = find_best_route(
+                # The find_best_route function should be modified to return the instructions string
+                # along with the list of buses.
+                return_busses, route_instructions = find_best_route(
                     from_town_obj,
                     to_town_obj,
                     departure_datetime=departure_datetime
                 )
-                if best_route_buses:
-                    return_busses = list(best_route_buses)
-                else:
-                    return_busses = []
 
-    return render(request, "busses.html", {
-        'busses': return_busses,
+    return render(request, "check_route.html", {
         'towns': all_towns,
         'from_town': from_town or '',
         'to_town': to_town or '',
         'date': departure_date_str or '',
         'departure_time': departure_time_str or '',
+        'route_instructions': route_instructions,
+        'busses': return_busses,  # Optionally pass the buses to display them as cards
     })
+
 
 def routes_list(request):
     routes = Route.objects.prefetch_related('routestop_set__town', 'bus')
@@ -371,7 +356,11 @@ def home(request):
 def busses(request):
     if request.user.is_authenticated:
         busses = Bus.objects.all()
-        return render(request, 'busses.html', {'busses': busses})
+        all_towns = Town.objects.all()  # Fetch all towns from the database
+        return render(request, 'busses.html', {
+            'busses': busses,
+            'towns': all_towns  # Pass the towns list to the template
+        })
     else:
         return redirect("home")
 
@@ -391,6 +380,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.utils.dateparse import parse_date
 from django.shortcuts import render, redirect, get_object_or_404
+
 
 def buy_ticket(request, bus_id):
     if not request.user.is_authenticated:
@@ -469,3 +459,88 @@ def delete_ticket(request, ticket_id):
             return redirect('tickets', user_id=request.user.id)
     else:
         return redirect("home")
+
+
+def buy_all_tickets(request):
+    """
+    This view collects the bus IDs and departure date from the form
+    and redirects the user to the confirmation page.
+    """
+    if not request.user.is_authenticated:
+        return redirect("home")
+
+    if request.method == "POST":
+        bus_ids = request.POST.getlist("bus_ids")
+        departure_date = request.POST.get("departure_date")
+
+        if not bus_ids:
+            messages.error(request, "No buses were selected to purchase.")
+            return redirect("check_route")
+
+        # Get the URL string first, then add the query parameters.
+        # This fixes the "Page not found" error.
+        base_url = redirect('confirm_all_tickets').url
+        query_params = '&'.join([f'bus_ids={id}' for id in bus_ids])
+        return redirect(f"{base_url}?{query_params}&departure_date={departure_date}")
+
+    return redirect("home")
+
+
+def confirm_all_tickets(request):
+    """
+    This view handles displaying the confirmation page (GET) and
+    processing the final purchase (POST).
+    """
+    if not request.user.is_authenticated:
+        return redirect("home")
+
+    if request.method == "POST":
+        bus_ids = request.POST.getlist("bus_ids")
+        departure_date_str = request.POST.get("departure_date")
+        departure_date = parse_date(departure_date_str)
+
+        try:
+            with transaction.atomic():
+                total_price = 0
+                for bus_id in bus_ids:
+                    bus = get_object_or_404(Bus, id=bus_id)
+
+                    occupied_seats = Ticket.objects.filter(bus=bus, departure_date=departure_date).count()
+                    if occupied_seats >= bus.number_of_seats:
+                        messages.warning(request, f"Bus '{bus.name}' is full. Ticket for this bus not purchased.")
+                        continue
+
+                    Ticket.objects.create(
+                        bus=bus,
+                        user=request.user,
+                        discounted_price=bus.price,
+                        departure_date=departure_date
+                    )
+                    total_price += bus.price
+
+            messages.success(request, f"All tickets purchased successfully for a total of ${total_price:.2f}!")
+            return redirect('tickets', user_id=request.user.id)
+
+        except Exception as e:
+            messages.error(request, f"An error occurred while purchasing tickets: {e}")
+            return redirect("check_route")
+
+    # Handle GET request (display confirmation page)
+    bus_ids = request.GET.getlist("bus_ids")
+    departure_date_str = request.GET.get("departure_date")
+
+    if not bus_ids or not departure_date_str:
+        messages.error(request, "Invalid request. Please search for a route again.")
+        return redirect("check_route")
+
+    busses = Bus.objects.filter(id__in=bus_ids)
+
+    # Calculate the total price
+    total_price = busses.aggregate(total=Sum('price'))['total'] or 0
+
+    context = {
+        'busses': busses,
+        'departure_date': departure_date_str,
+        'total_price': total_price,
+    }
+    return render(request, 'confirm_all_tickets.html', context)
