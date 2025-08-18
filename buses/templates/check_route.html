@@ -1,29 +1,114 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Check Bus Route with Gemini</title>
-</head>
-<body>
-<h1>Check if Bus Passes Through a Town</h1>
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <div class="container my-5">
+        <h1 class="text-center text-primary mb-5">Search for a Bus Route</h1>
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body">
+                <h4 class="card-title mb-4">🔍 Search for the Best Route</h4>
+                <form method="post" action="{% url 'check_route' %}">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="from_town" class="form-label">Departure Town</label>
+                            <select class="form-select" id="from_town" name="from_town" required>
+                                <option value="">Select a town</option>
+                                {% for town in towns %}
+                                    <option value="{{ town.name }}" {% if town.name == from_town %}selected{% endif %}>
+                                        {{ town.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="to_town" class="form-label">Arrival Town</label>
+                            <select class="form-select" id="to_town" name="to_town" required>
+                                <option value="">Select a town</option>
+                                {% for town in towns %}
+                                    <option value="{{ town.name }}" {% if town.name == to_town %}selected{% endif %}>
+                                        {{ town.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" name="date"
+                                   value="{{ date }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="departure_time" class="form-label">Departure Time</label>
+                            <input type="time" class="form-control" id="departure_time" name="departure_time"
+                                   value="{{ departure_time }}">
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-info px-4">Search</button>
+                    </div>
+                </form>
 
-<form method="post">
-    {% csrf_token %}
-    <label>From:</label>
-    <input type="text" name="from_town" required><br><br>
+                {% if route_instructions %}
+                    <div class="alert alert-success mt-4" role="alert">
+                        <h5 class="alert-heading">Route Details:</h5>
+                        <pre class="mb-0">{{ route_instructions }}</pre>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% if busses|length > 1 %}
+            <form method="post" action="{% url 'buy_all_tickets' %}">
+                {% csrf_token %}
+                <input type="hidden" name="departure_date" value="{{ date }}">
+                {% for bus in busses %}
+                    <input type="hidden" name="bus_ids" value="{{ bus.id }}">
+                {% endfor %}
+                <div class="d-flex justify-content-center my-4">
+                    <button type="submit" class="btn btn-success btn-lg shadow">
+                        <i class="fas fa-shopping-cart me-2"></i> Buy All Tickets
+                    </button>
+                </div>
+            </form>
+        {% endif %}
 
-    <label>To:</label>
-    <input type="text" name="to_town" required><br><br>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for bus in busses %}
+                <div class="col">
+                    <div class="card h-100 shadow border-0">
+                        {% if bus.image %}
+                            <img src="{{ bus.image.url }}" class="card-img-top" alt="Bus Image"
+                                 style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ bus.name }}</h5>
+                            <p class="text-muted">{{ bus.description }}</p>
 
-    <label>Through (optional):</label>
-    <input type="text" name="through_town" required><br><br>
+                            <p><strong>Departure:</strong> {{ bus.departure_time }}</p>
+                            <p><strong>Arrival:</strong> {{ bus.arrival_time }}</p>
 
-    <button type="submit">Check Route</button>
-</form>
+                            <p class="mt-3"><strong>Route:</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for route_town in bus.route.get_ordered_towns %}
+                                    <span class="badge bg-secondary">{{ route_town.name }}</span>
+                                {% endfor %}
+                            </div>
 
-{% if answer %}
-    <hr>
-    <h2>Gemini's Response:</h2>
-    <p>{{ answer }}</p>
-{% endif %}
-</body>
-</html>
+                            <p class="mt-3"><strong>Number of seats</strong></p>
+                            <div class="d-flex flex-wrap gap-1">
+                                <span class="badge bg-secondary">{{ bus.number_of_seats }}</span>
+                            </div>
+
+                            <p class="mt-3"><strong>From:</strong> {{ bus.route.start_town }}</p>
+                            <p><strong>To:</strong> {{ bus.route.end_town }}</p>
+                            <p class="text-success fw-bold">Price: ${{ bus.price }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-0">
+                            <form method="get" action="{% url 'buy_ticket' bus_id=bus.id %}">
+                                <button type="submit" class="btn btn-primary w-100">Buy Ticket</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
